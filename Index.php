@@ -12,7 +12,7 @@ $sort = isset($_GET['sort']) ? $_GET['sort'] : '';
 
 // Build dynamic query
 $sql = "
-    SELECT g.*
+    SELECT DISTINCT g.*
     FROM Games g
     LEFT JOIN GameGenres gg ON g.game_id = gg.game_id
     WHERE 1
@@ -50,9 +50,10 @@ $games = $stmt->get_result();
 
 <!DOCTYPE html>
 <html>
+<link rel="stylesheet" href="style.css">
 <head>
     <title>GameStore</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -62,7 +63,7 @@ $games = $stmt->get_result();
         <?php if (!isset($_SESSION['user_id'])): ?>
             <a href="login.php">Login</a> | <a href="register.php">Register</a>
         <?php else: ?>
-            Welcome! <a href="logout.php">Logout</a>
+            Welcome <?php echo( $_SESSION['user']) ?>! <a href="logout.php">Logout</a>
         <?php endif; ?>
     </div>
 </header>
@@ -92,13 +93,19 @@ $games = $stmt->get_result();
 
 <!-- Games Showcase -->
 <div class="games-section">
-    <?php while ($game = $games->fetch_assoc()): ?>
-        <div class="game-box">
+    <?php 
+    $prev_game=null;
+    while ($game = $games->fetch_assoc()): ?>
+     <a href="game_details.php?id=<?= $game['game_id'] ?>">
+       <button><div class="game-box">
             <img src="<?= htmlspecialchars($game['image_url']) ?>" alt="<?= htmlspecialchars($game['title']) ?>">
             <div><strong><?= htmlspecialchars($game['title']) ?></strong></div>
             <div><?= $game['price'] ?> EUR</div>
+            <div></div>
             <div><?= $game['release_date'] ?></div>
         </div>
+        </button>
+    </a>
     <?php endwhile; ?>
 </div>
 

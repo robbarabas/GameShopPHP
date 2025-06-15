@@ -28,8 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <!DOCTYPE html>
+
 <html>
-<head><title>Register</title></head>
+<head><title>Register</title>
+<link rel="stylesheet" href="style.css"></head>
 <body>
 <h2>Register</h2>
 <form method="POST" action="">

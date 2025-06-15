@@ -2,6 +2,7 @@
 session_start();
 include 'db.php';
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
@@ -12,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_result($user_id, $hash);
     if ($stmt->fetch() && password_verify($password, $hash)) {
         $_SESSION['user_id'] = $user_id;
+        $_SESSION['user']=$username;
         header("Location: index.php");
         exit();
     } else {
@@ -21,8 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <!DOCTYPE html>
+
 <html>
-<head><title>Login</title></head>
+<head><title>Login</title>
+<link rel="stylesheet" href="style.css"></head>
 <body>
 <h2>Login</h2>
 <form method="POST" action="">
