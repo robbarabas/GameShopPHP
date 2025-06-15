@@ -9,6 +9,18 @@ $genres = $conn->query("SELECT * FROM Genres");
 // Handle filters
 $genre_filter = isset($_GET['genre']) ? intval($_GET['genre']) : 0;
 $sort = isset($_GET['sort']) ? $_GET['sort'] : '';
+$is_admin = false;
+
+if (isset($_SESSION['user_id']) && isset($_SESSION['user'])) {
+    $stmt = $conn->prepare("SELECT is_admin FROM users WHERE username = ?");
+    $stmt->bind_param("s", $_SESSION['user']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        $is_admin = $row['is_admin'] == 1;
+    }
+}
 
 // Build dynamic query
 $sql = "
@@ -60,6 +72,15 @@ $games = $stmt->get_result();
 <header>
     <h1>GameStore</h1>
     <div class="login-box">
+<?php
+if($is_admin==1):
+?>
+
+ <a href="orders_admin.php">Orders-Manip AND Review Logs </a>|
+ <a href="manage_games.php">Manage Games </a>|
+<?php
+endif
+?>
         <?php if (!isset($_SESSION['user_id'])): ?>
             <a href="login.php">Login</a> | <a href="register.php">Register</a>
         <?php else: ?>
