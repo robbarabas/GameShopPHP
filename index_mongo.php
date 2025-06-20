@@ -4,6 +4,8 @@ include 'db_mongo.php';
 
 // Get genres for dropdown
 $genres = $db->genres->find()->toArray();
+use MongoDB\BSON\ObjectId;
+use MongoDB\BSON\UTCDateTime;
 
 // Handle filters
 $genre_filter = isset($_GET['genre']) ? intval($_GET['genre']) : 0;
@@ -76,7 +78,7 @@ foreach ($games as $game) {
     <?php if (!isset($_SESSION['user_id'])): ?>
         <a href="login_mongo.php">Login</a> | <a href="register_mongo.php">Register</a>
     <?php else: ?>
-        Welcome <?= htmlspecialchars($_SESSION['user']) ?>! <a href="logout.php">Logout</a>
+        Welcome <?= htmlspecialchars($_SESSION['user']) ?>! <a href="logout_mongo.php">Logout</a>
     <?php endif; ?>
     </div>
 </header>

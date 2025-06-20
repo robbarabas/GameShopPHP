@@ -3,6 +3,7 @@ session_start();
 include 'db_mongo.php';
 
 use MongoDB\BSON\ObjectId;
+use MongoDB\BSON\UTCDateTime;
 
 // DELETE order
 if (isset($_GET['delete'])) {
@@ -22,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
         'user_id' => $user_id,
         'game_id' => $game_id,
         'total_price' => $price,
-        'order_date' => new MongoDB\BSON\UTCDateTime()
+        'order_date' => new UTCDateTime()
     ]);
 }
 
@@ -37,20 +38,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     );
 }
 
-// FETCH all orders
-$orders = $db->Orders->find([], ['sort' => ['order_date' => -1]]);
+// PAGINATED ORDERS
+$orderLimit = 10;
+$orderPage = isset($_GET['order_page']) ? max(1, intval($_GET['order_page'])) : 1;
+$orderSkip = ($orderPage - 1) * $orderLimit;
 
-// PAGINATED review_log
-$limit = 10;
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$skip = ($page - 1) * $limit;
+$orderTotal = $db->orders->countDocuments();
+$orderTotalPages = ceil($orderTotal / $orderLimit);
 
-$total = $db->review_log->countDocuments();
-$total_pages = ceil($total / $limit);
+$ordersCursor = $db->orders->find(
+    [],
+    ['sort' => ['order_date' => -1], 'limit' => $orderLimit, 'skip' => $orderSkip]
+);
+
+// PAGINATED REVIEW LOG
+$logLimit = 10;
+$logPage = isset($_GET['log_page']) ? max(1, intval($_GET['log_page'])) : 1;
+$logSkip = ($logPage - 1) * $logLimit;
+
+$logTotal = $db->review_log->countDocuments();
+$logTotalPages = ceil($logTotal / $logLimit);
 
 $logsCursor = $db->review_log->find(
     [],
-    ['sort' => ['action_time' => -1], 'limit' => $limit, 'skip' => $skip]
+    ['sort' => ['action_time' => -1], 'limit' => $logLimit, 'skip' => $logSkip]
 );
 ?>
 
@@ -64,7 +75,7 @@ $logsCursor = $db->review_log->find(
     <tr>
         <th>ID</th><th>User</th><th>Game</th><th>Price</th><th>Date</th><th>Actions</th>
     </tr>
-    <?php foreach ($orders as $order): ?>
+    <?php foreach ($ordersCursor as $order): ?>
         <tr>
             <form method="POST">
                 <td><?= $order['_id'] ?></td>
@@ -74,7 +85,18 @@ $logsCursor = $db->review_log->find(
                     <input type="hidden" name="order_id" value="<?= $order['_id'] ?>">
                     <input type="number" step="0.01" name="price" value="<?= $order['total_price'] ?>">
                 </td>
-                <td><?= $order['order_date']->toDateTime()->format('Y-m-d H:i') ?></td>
+                <td>
+                    <?php
+                    $dt = $order['order_date'] ?? null;
+                    if ($dt instanceof UTCDateTime) {
+                        echo $dt->toDateTime()->format('Y-m-d H:i');
+                    } elseif (is_string($dt)) {
+                        echo (new DateTime($dt))->format('Y-m-d H:i');
+                    } else {
+                        echo 'Invalid date';
+                    }
+                    ?>
+                </td>
                 <td>
                     <button type="submit" name="update">Update</button>
                     <a href="?delete=<?= $order['_id'] ?>" onclick="return confirm('Are you sure?')">Delete</a>
@@ -83,6 +105,17 @@ $logsCursor = $db->review_log->find(
         </tr>
     <?php endforeach; ?>
 </table>
+
+<!-- Orders Pagination -->
+<div class="pagination">
+    <?php if ($orderPage > 1): ?>
+        <a href="?order_page=<?= $orderPage - 1 ?>&log_page=<?= $logPage ?>">Prev Orders</a>
+    <?php endif; ?>
+    Page <?= $orderPage ?> of <?= $orderTotalPages ?>
+    <?php if ($orderPage < $orderTotalPages): ?>
+        <a href="?order_page=<?= $orderPage + 1 ?>&log_page=<?= $logPage ?>">Next Orders</a>
+    <?php endif; ?>
+</div>
 
 <h3>Create Order</h3>
 <form method="POST">
@@ -113,19 +146,30 @@ $logsCursor = $db->review_log->find(
                 <td><?= $log['user_id'] ?></td>
                 <td><?= $log['game_id'] ?></td>
                 <td><?= htmlspecialchars($log['comment']) ?></td>
-                <td><?= $log['action_time']->toDateTime()->format('Y-m-d H:i:s') ?></td>
+                <td>
+                    <?php
+                    $logTime = $log['action_time'] ?? null;
+                    if ($logTime instanceof UTCDateTime) {
+                        echo $logTime->toDateTime()->format('Y-m-d H:i:s');
+                    } elseif (is_string($logTime)) {
+                        echo (new DateTime($logTime))->format('Y-m-d H:i:s');
+                    } else {
+                        echo 'Invalid date';
+                    }
+                    ?>
+                </td>
             </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
 
-<!-- Pagination -->
+<!-- Review Log Pagination -->
 <div class="pagination">
-    <?php if ($page > 1): ?>
-        <a href="?page=<?= $page - 1 ?>">Prev</a>
+    <?php if ($logPage > 1): ?>
+        <a href="?order_page=<?= $orderPage ?>&log_page=<?= $logPage - 1 ?>">Prev Logs</a>
     <?php endif; ?>
-    Page <?= $page ?> of <?= $total_pages ?>
-    <?php if ($page < $total_pages): ?>
-        <a href="?page=<?= $page + 1 ?>">Next</a>
+    Page <?= $logPage ?> of <?= $logTotalPages ?>
+    <?php if ($logPage < $logTotalPages): ?>
+        <a href="?order_page=<?= $orderPage ?>&log_page=<?= $logPage + 1 ?>">Next Logs</a>
     <?php endif; ?>
 </div>
